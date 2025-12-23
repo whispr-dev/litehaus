@@ -1,79 +1,921 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Litehaus Beacon Monitor</title>
-  <style>
-    body {
-      background-color: #0a0e27;
-      color: #00ff41;
-      font-family: 'Courier New', monospace;
-      white-space: pre-wrap;
-      padding: 2em;
-      margin: 0;
-    }
-    #output {
-      max-height: 85vh;
-      overflow-y: auto;
-      border: 2px solid #00ff41;
-      padding: 1em;
-      background-color: #000;
-      box-shadow: 0 0 20px #00ff41;
-    }
-    h1 {
-      text-align: center;
-      text-shadow: 0 0 10px #00ff41;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-    .status {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      padding: 10px;
-      background: #000;
-      border: 1px solid #00ff41;
-      border-radius: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌐 Litehaus Global Command Center</title>
+
+    <!-- Tailwind CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <style>
+        :root {
+            --nyc-primary: #f59e0b;
+            --nyc-secondary: #d97706;
+            --london-primary: #dc2626;
+            --london-secondary: #b91c1c;
+            --sydney-primary: #10b981;
+            --sydney-secondary: #059669;
+            --singapore-primary: #8b5cf6;
+            --singapore-secondary: #7c3aed;
+        }
+
+        @keyframes lighthouse-beam {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        @keyframes signal-wave {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.5); opacity: 0.4; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @keyframes ping-send {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 currentColor; }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); box-shadow: 0 0 20px 5px transparent; }
+        }
+
+        .lighthouse-beam { animation: lighthouse-beam 4s linear infinite; }
+        .pulse-ring { animation: pulse-ring 2s ease-out infinite; }
+        .signal-wave { animation: signal-wave 1.5s ease-out infinite; }
+        .terminal-cursor { animation: blink 1s infinite; }
+        .ping-active { animation: ping-send 0.3s ease-out; }
+
+        .gradient-text {
+            background: linear-gradient(45deg, #f59e0b, #dc2626, #10b981, #8b5cf6);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient-shift 4s ease infinite;
+        }
+
+        .bg-pattern-global {
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 30%, rgba(220, 38, 38, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 30% 80%, rgba(16, 185, 129, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 70% 70%, rgba(139, 92, 246, 0.15) 0%, transparent 40%);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .offline-indicator {
+            opacity: 0.4;
+            filter: grayscale(60%);
+        }
+
+        .node-nyc { --node-color: var(--nyc-primary); }
+        .node-london { --node-color: var(--london-primary); }
+        .node-sydney { --node-color: var(--sydney-primary); }
+        .node-singapore { --node-color: var(--singapore-primary); }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .status-dot.online::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+            animation: pulse-ring 2s ease-out infinite;
+        }
+
+        .log-container {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            max-height: 200px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.3) transparent;
+        }
+
+        .log-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+
+        .ping-btn {
+            transition: all 0.2s ease;
+        }
+
+        .ping-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(var(--node-color), 0.4);
+        }
+
+        .ping-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .ping-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .message-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .message-input:focus {
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+
+        .metric-value {
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Scrollbar for the whole page */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
 </head>
-<body>
-  <div class="status" id="status">⏳ Connecting...</div>
-  <h1>🏰 LITEHAUS BEACON MONITOR 🏰</h1>
-  <div id="output">Initializing monitor...</div>
+<body class="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black bg-pattern-global text-white">
 
-  <script>
-    const output = document.getElementById("output");
-    const status = document.getElementById("status");
-    // Use window.location.hostname to work with any domain
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${wsProtocol}//${window.location.hostname}/ws`);
+    <!-- Header -->
+    <header class="relative overflow-hidden border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="text-center">
+                <h1 class="text-5xl md:text-6xl font-bold gradient-text mb-4">
+                    🌐 Litehaus Command Center
+                </h1>
+                <p class="text-xl text-gray-400 mb-4">
+                    Global Network Monitoring • Real-Time Beacon Analysis
+                </p>
+                <div class="flex justify-center items-center gap-6 text-sm text-gray-500 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <div id="global-status" class="status-dot bg-gray-500"></div>
+                        <span id="global-status-text">Initializing...</span>
+                    </div>
+                    <span>⚡ WebSocket Streaming</span>
+                    <span>🔒 whispr.dev Infrastructure</span>
+                </div>
+            </div>
+        </div>
+    </header>
 
-    ws.onopen = () => {
-      status.textContent = "✅ Connected";
-      status.style.borderColor = "#00ff41";
-      output.textContent = "Connected to beacon monitor. Waiting for beacons...\n\n";
-    };
+    <!-- Global Message Input -->
+    <div class="max-w-7xl mx-auto px-6 py-6">
+        <div class="glass-card rounded-xl p-6">
+            <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                <div class="flex-1">
+                    <label class="block text-sm text-gray-400 mb-2">
+                        <i data-lucide="message-square" class="w-4 h-4 inline mr-1"></i>
+                        Broadcast Message (ping all nodes with custom payload)
+                    </label>
+                    <input 
+                        type="text" 
+                        id="global-message" 
+                        class="message-input w-full px-4 py-3 rounded-lg text-white placeholder-gray-500"
+                        placeholder="Enter message to broadcast..."
+                        maxlength="256"
+                    >
+                </div>
+                <button 
+                    id="broadcast-btn"
+                    class="px-6 py-3 bg-gradient-to-r from-amber-500 via-red-500 to-purple-500 rounded-lg font-semibold
+                           hover:from-amber-400 hover:via-red-400 hover:to-purple-400 transition-all
+                           flex items-center justify-center gap-2 whitespace-nowrap"
+                >
+                    <i data-lucide="radio" class="w-5 h-5"></i>
+                    Broadcast All
+                </button>
+            </div>
+        </div>
+    </div>
 
-    ws.onmessage = (event) => {
-      output.textContent += event.data;
-      output.scrollTop = output.scrollHeight;
-    };
+    <!-- Lighthouse Grid -->
+    <main class="max-w-7xl mx-auto px-6 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="lighthouse-grid">
+            <!-- NYC Node -->
+            <div class="glass-card rounded-2xl p-6 node-nyc" id="node-nyc">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="text-4xl">🗽</div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-amber-400">New York City</h2>
+                            <p class="text-sm text-gray-400">DigitalOcean NYC1 • Americas Hub</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div id="status-nyc" class="status-dot bg-gray-500"></div>
+                        <span id="status-text-nyc" class="text-sm text-gray-400">Offline</span>
+                    </div>
+                </div>
 
-    ws.onclose = () => {
-      status.textContent = "❌ Disconnected";
-      status.style.borderColor = "#ff0000";
-      output.textContent += "\n\n⚠️ Connection closed.\n";
-    };
+                <!-- Metrics -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="latency-nyc" class="text-2xl font-bold text-amber-400 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Latency (ms)</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="parse-nyc" class="text-2xl font-bold text-amber-300 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Parse (µs)</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="beacons-nyc" class="text-2xl font-bold text-amber-200 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Beacons</div>
+                    </div>
+                </div>
 
-    ws.onerror = (err) => {
-      status.textContent = "🚨 Error";
-      status.style.borderColor = "#ff0000";
-      console.error("WebSocket error:", err);
-    };
-  </script>
+                <!-- Controls -->
+                <div class="flex gap-2 mb-4">
+                    <button 
+                        id="ping-nyc" 
+                        class="ping-btn flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 rounded-lg font-medium
+                               flex items-center justify-center gap-2 transition-all"
+                    >
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        Ping NYC
+                    </button>
+                    <button 
+                        id="connect-nyc" 
+                        class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium
+                               flex items-center justify-center gap-2 transition-all"
+                    >
+                        <i data-lucide="plug" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Log -->
+                <div class="bg-black/40 rounded-lg p-3">
+                    <div class="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                        <i data-lucide="terminal" class="w-3 h-3"></i> Live Feed
+                    </div>
+                    <div id="log-nyc" class="log-container text-green-400">
+                        <div class="text-gray-500">Awaiting connection...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- London Node -->
+            <div class="glass-card rounded-2xl p-6 node-london" id="node-london">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="text-4xl">🇬🇧</div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-red-400">London</h2>
+                            <p class="text-sm text-gray-400">DigitalOcean LON1 • Europe Hub</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div id="status-london" class="status-dot bg-gray-500"></div>
+                        <span id="status-text-london" class="text-sm text-gray-400">Offline</span>
+                    </div>
+                </div>
+
+                <!-- Metrics -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="latency-london" class="text-2xl font-bold text-red-400 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Latency (ms)</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="parse-london" class="text-2xl font-bold text-red-300 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Parse (µs)</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="beacons-london" class="text-2xl font-bold text-red-200 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Beacons</div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex gap-2 mb-4">
+                    <button 
+                        id="ping-london" 
+                        class="ping-btn flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-medium
+                               flex items-center justify-center gap-2 transition-all"
+                    >
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        Ping London
+                    </button>
+                    <button 
+                        id="connect-london" 
+                        class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium
+                               flex items-center justify-center gap-2 transition-all"
+                    >
+                        <i data-lucide="plug" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Log -->
+                <div class="bg-black/40 rounded-lg p-3">
+                    <div class="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                        <i data-lucide="terminal" class="w-3 h-3"></i> Live Feed
+                    </div>
+                    <div id="log-london" class="log-container text-green-400">
+                        <div class="text-gray-500">Awaiting connection...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sydney Node -->
+            <div class="glass-card rounded-2xl p-6 node-sydney" id="node-sydney">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="text-4xl">🦘</div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-emerald-400">Sydney</h2>
+                            <p class="text-sm text-gray-400">DigitalOcean SYD1 • Asia-Pacific Hub</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div id="status-sydney" class="status-dot bg-gray-500"></div>
+                        <span id="status-text-sydney" class="text-sm text-gray-400">Offline</span>
+                    </div>
+                </div>
+
+                <!-- Metrics -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="latency-sydney" class="text-2xl font-bold text-emerald-400 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Latency (ms)</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="parse-sydney" class="text-2xl font-bold text-emerald-300 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Parse (µs)</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="beacons-sydney" class="text-2xl font-bold text-emerald-200 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Beacons</div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex gap-2 mb-4">
+                    <button 
+                        id="ping-sydney" 
+                        class="ping-btn flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-medium
+                               flex items-center justify-center gap-2 transition-all"
+                    >
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        Ping Sydney
+                    </button>
+                    <button 
+                        id="connect-sydney" 
+                        class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium
+                               flex items-center justify-center gap-2 transition-all"
+                    >
+                        <i data-lucide="plug" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Log -->
+                <div class="bg-black/40 rounded-lg p-3">
+                    <div class="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                        <i data-lucide="terminal" class="w-3 h-3"></i> Live Feed
+                    </div>
+                    <div id="log-sydney" class="log-container text-green-400">
+                        <div class="text-gray-500">Awaiting connection...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Singapore Node -->
+            <div class="glass-card rounded-2xl p-6 node-singapore" id="node-singapore">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="text-4xl">🇸🇬</div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-purple-400">Singapore</h2>
+                            <p class="text-sm text-gray-400">DigitalOcean SGP1 • Asia Hub</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div id="status-singapore" class="status-dot bg-gray-500"></div>
+                        <span id="status-text-singapore" class="text-sm text-gray-400">Offline</span>
+                    </div>
+                </div>
+
+                <!-- Metrics -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="latency-singapore" class="text-2xl font-bold text-purple-400 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Latency (ms)</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="parse-singapore" class="text-2xl font-bold text-purple-300 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Parse (µs)</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-3 text-center">
+                        <div id="beacons-singapore" class="text-2xl font-bold text-purple-200 metric-value">—</div>
+                        <div class="text-xs text-gray-500">Beacons</div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex gap-2 mb-4">
+                    <button 
+                        id="ping-singapore" 
+                        class="ping-btn flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg font-medium
+                               flex items-center justify-center gap-2 transition-all"
+                    >
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        Ping Singapore
+                    </button>
+                    <button 
+                        id="connect-singapore" 
+                        class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium
+                               flex items-center justify-center gap-2 transition-all"
+                    >
+                        <i data-lucide="plug" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Log -->
+                <div class="bg-black/40 rounded-lg p-3">
+                    <div class="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                        <i data-lucide="terminal" class="w-3 h-3"></i> Live Feed
+                    </div>
+                    <div id="log-singapore" class="log-container text-green-400">
+                        <div class="text-gray-500">Awaiting connection...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Global Stats Footer -->
+    <footer class="max-w-7xl mx-auto px-6 py-8">
+        <div class="glass-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                <i data-lucide="activity" class="w-5 h-5"></i>
+                Global Network Summary
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                <div>
+                    <div id="total-nodes" class="text-3xl font-bold text-white">0/4</div>
+                    <div class="text-sm text-gray-500">Nodes Online</div>
+                </div>
+                <div>
+                    <div id="avg-latency" class="text-3xl font-bold text-cyan-400 metric-value">—</div>
+                    <div class="text-sm text-gray-500">Avg Latency (ms)</div>
+                </div>
+                <div>
+                    <div id="total-beacons" class="text-3xl font-bold text-green-400 metric-value">0</div>
+                    <div class="text-sm text-gray-500">Total Beacons</div>
+                </div>
+                <div>
+                    <div id="total-pings" class="text-3xl font-bold text-amber-400 metric-value">0</div>
+                    <div class="text-sm text-gray-500">Pings Sent</div>
+                </div>
+                <div>
+                    <div id="uptime" class="text-3xl font-bold text-purple-400">00:00:00</div>
+                    <div class="text-sm text-gray-500">Session Uptime</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-8 text-gray-600 text-sm">
+            <p>🏰 Litehaus Network • whispr.dev • RYO Modular Infrastructure</p>
+        </div>
+    </footer>
+
+    <script>
+        // ══════════════════════════════════════════════════════════════════════
+        // LITEHAUS COMMAND CENTER - CORE ENGINE
+        // ══════════════════════════════════════════════════════════════════════
+
+        // Node Configuration - litehaus.online endpoints
+        const NODES = {
+            nyc: {
+                name: 'New York City',
+                wsUrl: 'wss://nyc.litehaus.online/ws',
+                pingUrl: 'https://nyc.litehaus.online/ping',
+                color: '#f59e0b',
+                emoji: '🗽'
+            },
+            london: {
+                name: 'London',
+                wsUrl: 'wss://lon.litehaus.online/ws',
+                pingUrl: 'https://lon.litehaus.online/ping',
+                color: '#dc2626',
+                emoji: '🇬🇧'
+            },
+            sydney: {
+                name: 'Sydney',
+                wsUrl: 'wss://syd.litehaus.online/ws',
+                pingUrl: 'https://syd.litehaus.online/ping',
+                color: '#10b981',
+                emoji: '🦘'
+            },
+            singapore: {
+                name: 'Singapore',
+                wsUrl: 'wss://sgp.litehaus.online/ws',
+                pingUrl: 'https://sgp.litehaus.online/ping',
+                color: '#8b5cf6',
+                emoji: '🇸🇬'
+            }
+        };
+
+        // State Management
+        const state = {
+            connections: {},
+            metrics: {},
+            pingCount: 0,
+            totalBeacons: 0,
+            sessionStart: Date.now()
+        };
+
+        // Initialize node state
+        Object.keys(NODES).forEach(id => {
+            state.connections[id] = null;
+            state.metrics[id] = {
+                latency: null,
+                parseTime: null,
+                beacons: 0,
+                lastPing: null,
+                online: false
+            };
+        });
+
+        // ══════════════════════════════════════════════════════════════════════
+        // UTILITY FUNCTIONS
+        // ══════════════════════════════════════════════════════════════════════
+
+        function formatTimestamp() {
+            return new Date().toISOString().substr(11, 12);
+        }
+
+        function formatUptime(ms) {
+            const seconds = Math.floor(ms / 1000) % 60;
+            const minutes = Math.floor(ms / 60000) % 60;
+            const hours = Math.floor(ms / 3600000);
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function appendLog(nodeId, message, type = 'info') {
+            const logEl = document.getElementById(`log-${nodeId}`);
+            if (!logEl) return;
+
+            const timestamp = formatTimestamp();
+            const colorClass = {
+                'info': 'text-gray-400',
+                'success': 'text-green-400',
+                'error': 'text-red-400',
+                'warn': 'text-amber-400',
+                'data': 'text-cyan-400'
+            }[type] || 'text-gray-400';
+
+            const line = document.createElement('div');
+            line.className = colorClass;
+            line.textContent = `[${timestamp}] ${message}`;
+            
+            // Keep log size manageable
+            if (logEl.children.length > 50) {
+                logEl.removeChild(logEl.firstChild);
+            }
+            
+            logEl.appendChild(line);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function clearLog(nodeId) {
+            const logEl = document.getElementById(`log-${nodeId}`);
+            if (logEl) logEl.innerHTML = '';
+        }
+
+        function updateNodeStatus(nodeId, online) {
+            const statusDot = document.getElementById(`status-${nodeId}`);
+            const statusText = document.getElementById(`status-text-${nodeId}`);
+            const nodeCard = document.getElementById(`node-${nodeId}`);
+            
+            state.metrics[nodeId].online = online;
+
+            if (online) {
+                statusDot.className = 'status-dot online';
+                statusDot.style.backgroundColor = NODES[nodeId].color;
+                statusDot.style.color = NODES[nodeId].color;
+                statusText.textContent = 'Online';
+                statusText.className = 'text-sm text-green-400';
+                nodeCard.classList.remove('offline-indicator');
+            } else {
+                statusDot.className = 'status-dot';
+                statusDot.style.backgroundColor = '#6b7280';
+                statusText.textContent = 'Offline';
+                statusText.className = 'text-sm text-gray-400';
+                nodeCard.classList.add('offline-indicator');
+            }
+
+            updateGlobalStats();
+        }
+
+        function updateMetrics(nodeId, data) {
+            const metrics = state.metrics[nodeId];
+            
+            // Parse incoming data - adjust these based on your actual JSON structure
+            if (data.latency_ms !== undefined) {
+                metrics.latency = data.latency_ms;
+                document.getElementById(`latency-${nodeId}`).textContent = 
+                    data.latency_ms.toFixed(1);
+            }
+            
+            if (data.json_parse_time_microseconds !== undefined) {
+                metrics.parseTime = data.json_parse_time_microseconds;
+                document.getElementById(`parse-${nodeId}`).textContent = 
+                    data.json_parse_time_microseconds.toFixed(1);
+            }
+            
+            if (data.total_beacons_broadcast !== undefined) {
+                metrics.beacons = data.total_beacons_broadcast;
+                document.getElementById(`beacons-${nodeId}`).textContent = 
+                    data.total_beacons_broadcast.toLocaleString();
+            }
+
+            // Increment local beacon counter on any message
+            metrics.beacons++;
+            state.totalBeacons++;
+
+            updateGlobalStats();
+        }
+
+        function updateGlobalStats() {
+            // Count online nodes
+            const onlineNodes = Object.values(state.metrics).filter(m => m.online).length;
+            document.getElementById('total-nodes').textContent = `${onlineNodes}/4`;
+
+            // Calculate average latency
+            const latencies = Object.values(state.metrics)
+                .filter(m => m.online && m.latency !== null)
+                .map(m => m.latency);
+            
+            if (latencies.length > 0) {
+                const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+                document.getElementById('avg-latency').textContent = avg.toFixed(1);
+            }
+
+            // Update totals
+            document.getElementById('total-beacons').textContent = 
+                state.totalBeacons.toLocaleString();
+            document.getElementById('total-pings').textContent = 
+                state.pingCount.toLocaleString();
+
+            // Update global status
+            const globalStatus = document.getElementById('global-status');
+            const globalStatusText = document.getElementById('global-status-text');
+            
+            if (onlineNodes === 4) {
+                globalStatus.className = 'status-dot online';
+                globalStatus.style.backgroundColor = '#10b981';
+                globalStatus.style.color = '#10b981';
+                globalStatusText.textContent = 'All Systems Operational';
+            } else if (onlineNodes > 0) {
+                globalStatus.className = 'status-dot online';
+                globalStatus.style.backgroundColor = '#f59e0b';
+                globalStatus.style.color = '#f59e0b';
+                globalStatusText.textContent = `${onlineNodes} Nodes Connected`;
+            } else {
+                globalStatus.className = 'status-dot';
+                globalStatus.style.backgroundColor = '#6b7280';
+                globalStatusText.textContent = 'No Connections';
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // WEBSOCKET CONNECTION MANAGEMENT
+        // ══════════════════════════════════════════════════════════════════════
+
+        function connectNode(nodeId) {
+            const node = NODES[nodeId];
+            
+            // Close existing connection if any
+            if (state.connections[nodeId]) {
+                state.connections[nodeId].close();
+            }
+
+            clearLog(nodeId);
+            appendLog(nodeId, `Connecting to ${node.name}...`, 'info');
+
+            try {
+                const ws = new WebSocket(node.wsUrl);
+                state.connections[nodeId] = ws;
+
+                ws.onopen = () => {
+                    updateNodeStatus(nodeId, true);
+                    appendLog(nodeId, `✅ Connected to ${node.name} beacon`, 'success');
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        // Try to parse as JSON
+                        const data = JSON.parse(event.data);
+                        updateMetrics(nodeId, data);
+                        
+                        // Log a condensed version
+                        const summary = data.lighthouse_id 
+                            ? `📡 ${data.lighthouse_id}: ${data.json_parse_time_microseconds?.toFixed(2) || '?'}µs`
+                            : `📡 Beacon received`;
+                        appendLog(nodeId, summary, 'data');
+                    } catch (e) {
+                        // Plain text message
+                        appendLog(nodeId, event.data, 'data');
+                        state.metrics[nodeId].beacons++;
+                        state.totalBeacons++;
+                    }
+                };
+
+                ws.onclose = (event) => {
+                    updateNodeStatus(nodeId, false);
+                    appendLog(nodeId, `❌ Connection closed (code: ${event.code})`, 'error');
+                    state.connections[nodeId] = null;
+                };
+
+                ws.onerror = (error) => {
+                    appendLog(nodeId, `🚨 WebSocket error`, 'error');
+                };
+
+            } catch (error) {
+                appendLog(nodeId, `Failed to connect: ${error.message}`, 'error');
+                updateNodeStatus(nodeId, false);
+            }
+        }
+
+        function disconnectNode(nodeId) {
+            if (state.connections[nodeId]) {
+                state.connections[nodeId].close();
+                state.connections[nodeId] = null;
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // PING FUNCTIONALITY
+        // ══════════════════════════════════════════════════════════════════════
+
+        async function pingNode(nodeId, message = null) {
+            const node = NODES[nodeId];
+            const btn = document.getElementById(`ping-${nodeId}`);
+            const startTime = performance.now();
+
+            // Visual feedback
+            btn.classList.add('ping-active');
+            btn.disabled = true;
+
+            appendLog(nodeId, `⚡ Sending ping${message ? ` with message: "${message}"` : ''}...`, 'warn');
+
+            try {
+                const payload = message 
+                    ? { timestamp: Date.now(), message }
+                    : { timestamp: Date.now() };
+
+                const response = await fetch(node.pingUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    mode: 'cors'
+                });
+
+                const latency = performance.now() - startTime;
+                state.pingCount++;
+                state.metrics[nodeId].lastPing = latency;
+
+                if (response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    appendLog(nodeId, `✅ Pong! ${latency.toFixed(1)}ms`, 'success');
+                    
+                    // Update latency metric
+                    state.metrics[nodeId].latency = latency;
+                    document.getElementById(`latency-${nodeId}`).textContent = latency.toFixed(1);
+                } else {
+                    appendLog(nodeId, `⚠️ Ping failed: HTTP ${response.status}`, 'error');
+                }
+            } catch (error) {
+                appendLog(nodeId, `🚨 Ping error: ${error.message}`, 'error');
+            } finally {
+                btn.classList.remove('ping-active');
+                btn.disabled = false;
+                updateGlobalStats();
+            }
+        }
+
+        async function broadcastPing() {
+            const message = document.getElementById('global-message').value.trim();
+            const btn = document.getElementById('broadcast-btn');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Broadcasting...';
+            
+            // Ping all nodes in parallel
+            const promises = Object.keys(NODES).map(nodeId => 
+                pingNode(nodeId, message || null)
+            );
+            
+            await Promise.allSettled(promises);
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="radio" class="w-5 h-5"></i> Broadcast All';
+            lucide.createIcons();
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // INITIALIZATION
+        // ══════════════════════════════════════════════════════════════════════
+
+        function initEventListeners() {
+            // Ping buttons
+            Object.keys(NODES).forEach(nodeId => {
+                document.getElementById(`ping-${nodeId}`).addEventListener('click', () => {
+                    const message = document.getElementById('global-message').value.trim();
+                    pingNode(nodeId, message || null);
+                });
+
+                document.getElementById(`connect-${nodeId}`).addEventListener('click', () => {
+                    if (state.connections[nodeId]) {
+                        disconnectNode(nodeId);
+                    } else {
+                        connectNode(nodeId);
+                    }
+                });
+            });
+
+            // Broadcast button
+            document.getElementById('broadcast-btn').addEventListener('click', broadcastPing);
+
+            // Enter key in message input
+            document.getElementById('global-message').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    broadcastPing();
+                }
+            });
+        }
+
+        function startUptimeTimer() {
+            setInterval(() => {
+                const elapsed = Date.now() - state.sessionStart;
+                document.getElementById('uptime').textContent = formatUptime(elapsed);
+            }, 1000);
+        }
+
+        function autoConnect() {
+            // Attempt to connect to all nodes on load
+            Object.keys(NODES).forEach(nodeId => {
+                // Small delay between connections to avoid overwhelming
+                setTimeout(() => connectNode(nodeId), Math.random() * 1000);
+            });
+        }
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initEventListeners();
+            startUptimeTimer();
+            updateGlobalStats();
+            
+            // Auto-connect after a brief delay
+            setTimeout(autoConnect, 500);
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Litehaus Beacon Monitor</title>
+  <style>
+    body {
+      background-color: #0a0e27;
+      color: #00ff41;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      padding: 2em;
+      margin: 0;
+    }
+    #output {
+      max-height: 85vh;
+      overflow-y: auto;
+      border: 2px solid #00ff41;
+      padding: 1em;
+      background-color: #000;
+      box-shadow: 0 0 20px #00ff41;
+    }
+    h1 {
+      text-align: center;
+      text-shadow: 0 0 10px #00ff41;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .status {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px;
+      background: #000;
+      border: 1px solid #00ff41;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="status" id="status">⏳ Connecting...</div>
+  <h1>🏰 LITEHAUS BEACON MONITOR 🏰</h1>
+  <div id="output">Initializing monitor...</div>
+
+  <script>
+    const output = document.getElementById("output");
+    const status = document.getElementById("status");
+    // Use window.location.hostname to work with any domain
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${wsProtocol}//${window.location.hostname}/ws`);
+
+    ws.onopen = () => {
+      status.textContent = "✅ Connected";
+      status.style.borderColor = "#00ff41";
+      output.textContent = "Connected to beacon monitor. Waiting for beacons...\n\n";
+    };
+
+    ws.onmessage = (event) => {
+      output.textContent += event.data;
+      output.scrollTop = output.scrollHeight;
+    };
+
+    ws.onclose = () => {
+      status.textContent = "❌ Disconnected";
+      status.style.borderColor = "#ff0000";
+      output.textContent += "\n\n⚠️ Connection closed.\n";
+    };
+
+    ws.onerror = (err) => {
+      status.textContent = "🚨 Error";
+      status.style.borderColor = "#ff0000";
+      console.error("WebSocket error:", err);
+    };
+  </script>
+</body>
+</html>

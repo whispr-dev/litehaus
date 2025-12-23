@@ -16,7 +16,7 @@ app.use(express.static(__dirname));
 // Start HTTP server
 const httpServer = app.listen(HTTP_PORT, '0.0.0.0', () => {
     console.log(`📡 HTTP Server running on port ${HTTP_PORT}`);
-    console.log(`🌐 Open http://137.184.105.114:${HTTP_PORT} in your browser`);
+    console.log(`🌐 Open http:/134.199.170.197:${HTTP_PORT} in your browser`);
 });
 
 // Create WebSocket server
@@ -141,5 +141,5 @@ process.on('SIGINT', () => {
 });
 
 console.log('\n🏰 Litehaus Beacon Monitor Ready! 🏰');
-console.log(`📋 Open http://137.184.105.114:${HTTP_PORT} to watch beacons live!`);
+console.log(`📋 Open http://134.199.170.197:${HTTP_PORT} to watch beacons live!`);
 console.log('🚀 Press Ctrl+C to stop\n');

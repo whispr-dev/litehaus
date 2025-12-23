@@ -1357,7 +1357,7 @@ Click the orange cloud to make it gray (DNS only mode)
 Try http://nyc.litehaus.online again
 
 Option B: Add SSL with Let's Encrypt (Proper Solution)
-bash# Install certbot
+Install certbot
 sudo apt install certbot python3-certbot-nginx
 
 # Get SSL certificate

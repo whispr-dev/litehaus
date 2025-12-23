@@ -1,4 +1,4 @@
-# [README.md]
+[README.md]
 
 
 ## litehaus
@@ -51,24 +51,24 @@ Litehaus is a distributed lighthouse beacon system that combines blazing-fast C+
 ## Architecture
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  LIGHTHOUSE (Your Machine)                              												   │
-│  - Pings: FastPing API (port 9876)                     											   │
-│  - Sends UDP beacons to: Beacon Monitor (port 9876)    								   │
+│  LIGHTHOUSE (Your Machine)                              │
+│  - Pings: FastPing API (port 9876)                     	│
+│  - Sends UDP beacons to: Beacon Monitor (port 9876)    	│
 └─────────────────────────────────────────────────────────┘
                          ↓ UDP every 5s
 ┌─────────────────────────────────────────────────────────┐
-│  SERVER (nyc.litehaus.online / 137.184.105.114)        								   │
-│                                                         																		   │
-│  ├─ Port 9876:  FastPing API (HTTP)                    											   │
-│  ├─ Port 9876:  UDP Beacon Receiver                    											   │
-│  ├─ Port 8080:  Beacon Monitor (HTTP)                  											   │
-│  ├─ Port 8083:  WebSocket Server                       												   │
-│  └─ Port 80:    Nginx (reverse proxy - optional)       									   │
+│  SERVER (nyc.litehaus.online / 137.184.105.114)        	│
+│                                                         │
+│  ├─ Port 9876:  FastPing API (HTTP)                    	│
+│  ├─ Port 9876:  UDP Beacon Receiver                    	│
+│  ├─ Port 8080:  Beacon Monitor (HTTP)                  	│
+│  ├─ Port 8083:  WebSocket Server                       	│
+│  └─ Port 80:    Nginx (reverse proxy - optional)       	│
 └─────────────────────────────────────────────────────────┘
                          ↓
 ┌─────────────────────────────────────────────────────────┐
-│  YOUR BROWSER                                           															   │
-│  http://137.184.105.114:8080                            												   │
+│  YOUR BROWSER                                           │
+│  http://137.184.105.114:8080                            │
 └─────────────────────────────────────────────────────────┘
 ```
 

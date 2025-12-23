@@ -5,7 +5,7 @@ const express = require('express');
 // 🏰 LITEHAUS BEACON WEB MONITOR 🏰
 console.log('🚀 Starting Litehaus Beacon Web Monitor...');
 
-const HTTP_PORT = 8080;
+const HTTP_PORT = 8081;
 const WS_PORT = 8083;
 const UDP_PORT = 9876;
 

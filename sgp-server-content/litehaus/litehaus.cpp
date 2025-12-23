@@ -49,7 +49,7 @@ struct FastPingResponse {
 
 // Beacon Payload Structure
 struct UltimateBeaconPayload {
-    std::string beacon_id{ "ultimate-lighthouse-001" };
+    std::string beacon_id{ "ultimate-lighthouse-004" };
     uint64_t timestamp{ 0 };
     std::string status{ "initializing" };
     std::string last_ping_status{};
@@ -378,7 +378,7 @@ private:
     std::unique_ptr<UltimateJsonProcessor> json_processor;
     std::unique_ptr<UltimateHttpClient> http_client;
     
-    std::string fastping_url{ "http://fastping.it.com:9876/ping?format=json" };
+    std::string fastping_url{ "http://137.184.105.114:9876/ping?format=json" };
     std::string beacon_ip{ "68.183.227.135" };
     int beacon_port{ 9876 };
     

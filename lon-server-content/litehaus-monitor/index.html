@@ -534,28 +534,24 @@
             nyc: {
                 name: 'New York City',
                 wsUrl: 'wss://nyc.litehaus.online/ws',
-                pingUrl: 'https://nyc.litehaus.online/ping',
                 color: '#f59e0b',
                 emoji: '🗽'
             },
             london: {
                 name: 'London',
                 wsUrl: 'wss://lon.litehaus.online/ws',
-                pingUrl: 'https://lon.litehaus.online/ping',
                 color: '#dc2626',
                 emoji: '🇬🇧'
             },
             sydney: {
                 name: 'Sydney',
                 wsUrl: 'wss://syd.litehaus.online/ws',
-                pingUrl: 'https://syd.litehaus.online/ping',
                 color: '#10b981',
                 emoji: '🦘'
             },
             singapore: {
                 name: 'Singapore',
                 wsUrl: 'wss://sgp.litehaus.online/ws',
-                pingUrl: 'https://sgp.litehaus.online/ping',
                 color: '#8b5cf6',
                 emoji: '🇸🇬'
             }
@@ -791,46 +787,62 @@
         }
 
         // ══════════════════════════════════════════════════════════════════════
-        // PING FUNCTIONALITY
+        // PING FUNCTIONALITY (via WebSocket)
         // ══════════════════════════════════════════════════════════════════════
+
+        // Track pending pings for latency measurement
+        const pendingPings = {};
 
         async function pingNode(nodeId, message = null) {
             const node = NODES[nodeId];
             const btn = document.getElementById(`ping-${nodeId}`);
-            const startTime = performance.now();
+            const ws = state.connections[nodeId];
 
             // Visual feedback
             btn.classList.add('ping-active');
             btn.disabled = true;
 
-            appendLog(nodeId, `⚡ Sending ping${message ? ` with message: "${message}"` : ''}...`, 'warn');
+            // Check if connected
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                appendLog(nodeId, `🚨 Not connected - connecting first...`, 'warn');
+                connectNode(nodeId);
+                btn.classList.remove('ping-active');
+                btn.disabled = false;
+                return;
+            }
+
+            const pingId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            const startTime = performance.now();
+
+            appendLog(nodeId, `⚡ Sending ping${message ? `: "${message}"` : ''}...`, 'warn');
 
             try {
-                const payload = message 
-                    ? { timestamp: Date.now(), message }
-                    : { timestamp: Date.now() };
-
-                const response = await fetch(node.pingUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                    mode: 'cors'
+                const payload = JSON.stringify({
+                    type: 'ping',
+                    id: pingId,
+                    timestamp: Date.now(),
+                    message: message || null
                 });
 
-                const latency = performance.now() - startTime;
-                state.pingCount++;
-                state.metrics[nodeId].lastPing = latency;
+                // Store pending ping for latency calc
+                pendingPings[pingId] = { nodeId, startTime };
 
-                if (response.ok) {
-                    const data = await response.json().catch(() => ({}));
-                    appendLog(nodeId, `✅ Pong! ${latency.toFixed(1)}ms`, 'success');
-                    
-                    // Update latency metric
-                    state.metrics[nodeId].latency = latency;
-                    document.getElementById(`latency-${nodeId}`).textContent = latency.toFixed(1);
-                } else {
-                    appendLog(nodeId, `⚠️ Ping failed: HTTP ${response.status}`, 'error');
-                }
+                ws.send(payload);
+                state.pingCount++;
+
+                // Calculate latency immediately (send latency)
+                const sendLatency = performance.now() - startTime;
+                appendLog(nodeId, `✅ Ping sent! (${sendLatency.toFixed(1)}ms send time)`, 'success');
+
+                // Update metrics
+                state.metrics[nodeId].latency = sendLatency;
+                document.getElementById(`latency-${nodeId}`).textContent = sendLatency.toFixed(1);
+
+                // Clean up pending ping after timeout
+                setTimeout(() => {
+                    delete pendingPings[pingId];
+                }, 10000);
+
             } catch (error) {
                 appendLog(nodeId, `🚨 Ping error: ${error.message}`, 'error');
             } finally {
@@ -840,23 +852,24 @@
             }
         }
 
-        async function broadcastPing() {
+        function broadcastPing() {
             const message = document.getElementById('global-message').value.trim();
             const btn = document.getElementById('broadcast-btn');
             
             btn.disabled = true;
             btn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Broadcasting...';
             
-            // Ping all nodes in parallel
-            const promises = Object.keys(NODES).map(nodeId => 
-                pingNode(nodeId, message || null)
-            );
+            // Ping all nodes
+            Object.keys(NODES).forEach(nodeId => {
+                pingNode(nodeId, message || null);
+            });
             
-            await Promise.allSettled(promises);
-            
-            btn.disabled = false;
-            btn.innerHTML = '<i data-lucide="radio" class="w-5 h-5"></i> Broadcast All';
-            lucide.createIcons();
+            // Re-enable after brief delay
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="radio" class="w-5 h-5"></i> Broadcast All';
+                lucide.createIcons();
+            }, 500);
         }
 
         // ══════════════════════════════════════════════════════════════════════

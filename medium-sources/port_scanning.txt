@@ -1,0 +1,69 @@
+Port Scanning for Bug Bounties
+Ott3rly
+Published in
+InfoSec Write-ups
+
+6 min read Apr 22, 2024
+
+Are you using the same port scanning techniques as everybody else and not getting desirable results? It’s time to change your approach! We will delve into port scanning strategies, that will transform you from beginner to advanced. Many people use port scanners like naabu, rustscan, masscan, or maybe even others. Although there are certain areas where one tool is better than another, but why reinvent the wheel? The nmap has already many things you need! It has the best balance between speed and coverage. Many newbies say that nmap is very slow. Not many people know that certain features of this tool could make it much better than for instance naabu speed-wise. It’s time to work smarter, not harder, and discover the areas where other port scanners miss. We’re about to break down the advanced port scanning tactics to make you stand out from the crowd.
+
+Watch this video in case you are too lazy to read :)
+Choosing Targets
+There are a couple of approaches I usually use in the bug bounty — either I select a single program or I do hack on multiple programs at once. In this writeup, I will show the second approach. For this case, I have used bbscope tool to get primary targets. I also gathered only public programs from Bugcrowd:
+
+bbscope bc -b <TOKEN> | tee bbscope.txt
+I manually filtered the collected results from bbscope.txt into two different files:
+
+ips.txt — contains IPs and IP ranges.
+hosts.txt — contains many websites from public Bug Bounty programs. I have excluded the wildcard domains and only left www sites or main pages.
+
+Scanning Hostnames
+The first command I would like to run with nmap is for the hostnames. Let’s pass the hosts.txt to nmap and use the following command:
+
+nmap -iL hosts.txt -Pn --min-rate 5000 --max-retries 1 --max-scan-delay 20ms -T4 --top-ports 1000 --exclude-ports 22,80,443,53,5060,8080 --open -oX nmap.xml
+To summarize this command what it does:
+
+-iL hosts.txt — pass file containing hostnames.
+-Pn — skips host discovery.
+-min-rate 5000 — this defines how many packets to send with each request. More will increase speed, but setting it too much could sometimes miss ports or get you blocked by network firewalls.
+-max-retries 1 — by default, the nmap will do multiple retries, so using 1 or even 0 will increase its speed by a lot.
+-max-scan-delay 20ms — the time between each scan.
+-T4 — nmap speed option. The max could be T5, but if you use T5, you can miss some parts and if you aim for balance between speed and coverage, select the fourth.
+-top-ports 1000 — this will scan the most common 1000 ports.
+-exclude-ports 22,80,443,53,5060,8080 — self-explanatory option, I want to exclude those ports, that I usually find using httpx, so I do not need to do this two times.
+-open — to check only those who are not filtered or closed.
+-oX nmap.xml — saves the output in XML format.
+As I gave a test for 500 hosts, it only took around 6 minutes to scan. Not all of them they up and running, but still it’s a pretty good result, considering the coverage and the speed.
+
+After getting the XML output, the next thing to do is parse that XML file into the IP:PORT format. I have made a custom script on gist for this. It takes the file from standard input and uses xmlint library just to get ipv4 IPs and for each found IP, it will also match the port which is open and prints the output to the screen. Let’s try to use it directly by a terminal:
+
+curl -s 'https://gist.githubusercontent.com/ott3rly/7bd162b1f2de4dcf3d65de07a530a326/raw/83c68d246b857dcf04d88c2db9d54b4b8a4c885a/nmap-xml-to-httpx.sh' | bash -s - nmap.xml
+It will request the script from the gist, and execute using bash while passing the nmap.xml file. The final result will look similar to this (I am using random IPs and ports here):
+
+123.321.22.100:1333 
+13.32.222.13:1334 
+123.31.222.103:1335 
+...
+Additionally what you can do, is also pipe that to httpx and check for the status code:
+
+curl -s 'https://gist.githubusercontent.com/ott3rly/7bd162b1f2de4dcf3d65de07a530a326/raw/83c68d246b857dcf04d88c2db9d54b4b8a4c885a/nmap-xml-to-httpx.sh' | bash -s - nmap.xml | httpx -mc 200
+Scanning IP Ranges
+Now try to do the same command for the IPs and IP ranges file. I will use the same options, except the output file will be different:
+
+nmap -iL ips.txt -Pn --min-rate 5000 --max-retries 1 --max-scan-delay 20ms -T4 --top-ports 1000 --exclude-ports 22,80,443,53,5060,8080 --open -oX nmap2.xml
+For this current run, it took more than 5 hours to scan more than 23,000 IP addresses. At least for me, it’s good to leave scans like this in the background while I am sleeping.
+
+Of course, do not overdo nmap scans like this, since doing port scans too much might make your network provider a bit angry and your internet speed will be limited. And once again what is left to do with that XML output is convert it again using the same gist:
+
+curl -s 'https://gist.githubusercontent.com/ott3rly/7bd162b1f2de4dcf3d65de07a530a326/raw/83c68d246b857dcf04d88c2db9d54b4b8a4c885a/nmap-xml-to-httpx.sh' | bash -s - nmap2.xml
+Tips For Better Scanning Experience
+Tip #1
+If you have read or watched my content before, you might know that I’m a big fan of axiom, mainly for recon, so many of you might think that it could be also a good option for port scans. Well, you should hold your horses before doing this. It’s actually against the terms of services for many Cloud providers and usually, only sketchy VPS providers will allow that. Stay away from port scanning using servers, because you do not want to get in trouble. Believe me, I’m talking from my own experience! If you are using the same provider for BXSS, OOB server, or just hosting your website, your account could be suspended for using port scans and you will lose access to everything! Instead, I will only recommend using port scanning for a selected few targets from your local computer — like main websites for various programs.
+
+Tip #2
+Ideally, you want to scan those main targets once or twice a day using a cron job from your computer. To make the process simpler, I recommend checking crontab.guru website. It will explain the syntax of cron in an easily understandable manner. Next, open crontab in your terminal and paste the script that you will want to run periodically:
+
+You will need to paste the value from crontab.guru website and your desired command. For instance, this cron job will run my specified nmap command each day every 12th hour:
+
+Tip #3
+Another tip that I would like to share, is if you want to scan a lot of IPs at once pretty fast. You should try using jfscan tool by nullt3r. Basically, it merges nmap with masscan and will make your life much easier, but keep in mind, that you are trading coverage for speed.

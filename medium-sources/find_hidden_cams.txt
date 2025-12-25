@@ -1,0 +1,57 @@
+You can use this to your advantage with an application called Fing. Fing exists for iPhone and Android . It’s free and has no ads. Fing asks you to sign in for more features, but you will not need to do this for a simple device scan.
+
+The application will help you to see all the devices that are connected to your local network. We recommend disconnecting all your devices except your phone or tablet running the Fing app, so you have fewer things to control. Connect your phone or tablet to the network, then turn on Fing.
+
+On Android, click the “Refresh” button in the upper right corner of the app screen to get started and agree to grant location permissions to the app. The iPhone application performs this step automatically.
+
+Wait for the application to finish scanning, and then see the list of devices found.
+
+Even if you do not find a camera in this list, take a look at the number of devices you see in the list and see which ones are in the room. If you see something unusual (perhaps without recognizable details) and you can not locate the source, click the IP address. The next step is to scan for open doors.
+
+If you find suspicious devices on the network, you should scan for the open ports that these devices use. First, tap the “Network” button at the bottom of the screen.
+
+Then click “Find Open Doors”.
+
+Enter the IP address you entered earlier and then press the blue “Find Open Doors” button.
+
+The list will show which ports are open and which services they use. Check for RTSP and RTMP connections.
+
+They are about streaming videos. For anything that comes with HTTP or HTTPS as a service, you can try connecting to a browser that can detect streaming video. Just enter the IP address in your browser, followed by a colon, and the port (ie 192.168.0.15:80).
+
+How To Locate Night Vision Cameras
+
+If you do not have access to the local network to try the above steps, let’s see what else you can do. But before we proceed we must mention that the above steps are not a panacea. A hidden camera could be located on a separate network.
+
+Of course, it could also be very well hidden so that it is not easily recognized. All you have to do is look for infrared lamps. Most IP cameras use infrared for night vision. Infrared is invisible to the naked eye, but your smartphone can help.
+
+Some smartphones have filters to block out infrared light on the main camera, but very few of them have filters on the front camera. To determine which camera works on your device, use an infrared remote control like the one you use for your TV. Focus on the main camera of your smartphone and press a button. If you see the light on the screen, then it can detect infrared. If you do not see try again with the front camera.
+
+Once you have identified the camera to use, turn off the lights in the room you want to scan. Then turn on your smartphone camera and start looking for bright lights. They will usually be purple, but can sometimes look white. You will not necessarily need to be near the hidden camera. In the picture above, the camera is a few meters away.
+
+Take a look at another side of the house:
+
+The light in the center of the image is the same camera, just three rooms away (dining room, living room and library). It is bright enough to notice. However, do not just look at the center of the walls, point your smartphone at the ceiling, air vents and even the sockets. Look for something unusual.
+
+Does a room have more than one smoke detector? Is there a USB hub in a place without other electronics? If you touch a mirror and look at your finger from an angle, does your reflected finger not “communicate” with your real finger? If you do the same with one-way glass, your reflected finger and your real finger will come in contact. So any unusual could hide a camera.
+
+Unfortunately, there is no guaranteed method to find a hidden camera. However, if you take these extra steps when you arrive at a place, with a simple search for devices, you will “catch” the “eyes” that does not know much.
+
+Updated 22/12/2021
+
+There are many other apps out there right now that detect hidden surveillance cameras on Android.
+
+Download: Hidden Camera Detector (Free)
+
+Download: Glint finder (Free)
+
+Download: Hidden IR Camera Detector (free)
+
+Apps for iOS:
+
+Download: Hidden Camera Detector (Free, in-app purchases)
+
+Download: DontSpy 2 — detector ($ 1.99)
+
+Download: Hidden Spy Camera Detector ($ 2.99)
+
+Whichever app you choose, you will be able to detect cameras and speakers, maybe even hidden computers.

@@ -1,0 +1,43 @@
+[Unit]
+Description=Litehaus Home Master Node - Core Service
+Documentation=https://github.com/litehaus/litehaus-home
+After=network.target chrony.service gpsd.service
+Wants=chrony.service gpsd.service
+
+[Service]
+Type=simple
+User=litehaus
+Group=litehaus
+
+# Working directory
+WorkingDirectory=/var/lib/litehaus
+
+# Main executable
+ExecStart=/usr/local/bin/litehaus-core -c /etc/litehaus/core.conf
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/litehaus /var/log/litehaus
+
+# Allow network and time access
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_NET_RAW
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_SYS_TIME CAP_NET_RAW
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=litehaus-core
+
+[Install]
+WantedBy=multi-user.target
